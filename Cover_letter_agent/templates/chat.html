@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with Trav</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* ── Download button ────────────────────────────────────────── */
+        #downloadBtn { background: #4e73df; transition: background .2s, opacity .2s; }
+        #downloadBtn:hover:not(:disabled) { background: #375abc; }
+        #downloadBtn:disabled { background: #b0bcd8; cursor: not-allowed; opacity: .7; }
+
+        .btn-hint { font-size: .78rem; color: #888; margin-top: 4px; }
+
+        .spinner {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+            border-radius: 50%; animation: spin .7s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Mandatory deletion modal overlay ───────────────────────── */
+        #deleteOverlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0, 0, 0, .65);
+            /* everything under the overlay is unreachable */
+            pointer-events: all;
+            justify-content: center;
+            align-items: center;
+        }
+        #deleteOverlay.active { display: flex; }
+
+        #deleteCard {
+            background: #fff;
+            border-radius: 14px;
+            padding: 36px 40px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,.35);
+            text-align: center;
+            animation: popIn .25s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(.88); opacity: 0; }
+            to   { transform: scale(1);   opacity: 1; }
+        }
+
+        #deleteCard .icon  { font-size: 2.8rem; margin-bottom: 10px; }
+        #deleteCard h2     { margin: 0 0 10px; color: #c0392b; font-size: 1.2rem; }
+        #deleteCard p      { color: #555; font-size: .92rem; line-height: 1.55; margin: 0 0 20px; }
+
+        /* Countdown ring + number */
+        .countdown-wrap {
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 22px;
+        }
+        .countdown-ring {
+            position: relative; width: 72px; height: 72px;
+        }
+        .countdown-ring svg { transform: rotate(-90deg); }
+        .countdown-ring circle.track {
+            fill: none; stroke: #f0f0f0; stroke-width: 6;
+        }
+        .countdown-ring circle.progress {
+            fill: none; stroke: #e74a3b; stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 188;          /* 2π × r(30) */
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear, stroke .5s;
+        }
+        .countdown-ring .num {
+            position: absolute; inset: 0;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1rem; font-weight: 700; color: #c0392b;
+        }
+
+        #deleteNowBtn {
+            background: #e74a3b; color: #fff; border: none;
+            padding: 13px 32px; border-radius: 9px;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            width: 100%; transition: background .2s;
+        }
+        #deleteNowBtn:hover:not(:disabled) { background: #c0392b; }
+        #deleteNowBtn:disabled { background: #e8a099; cursor: not-allowed; }
+
+        /* State: auto-purge happened */
+        #deleteCard.auto-purged h2    { color: #555; }
+        #deleteCard.auto-purged .icon { opacity: .5; }
+
+        /* ── Bottom bar ──────────────────────────────────────────────── */
+        .bottom-bar { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+        .btn-group  { display: flex; flex-direction: column; align-items: flex-start; }
+    </style>
+</head>
+<body>
+
+<!-- ── Mandatory CV deletion modal (shown after every PDF download) ──────── -->
+<div id="deleteOverlay" role="dialog" aria-modal="true"
+     aria-labelledby="deleteTitle" aria-describedby="deleteDesc">
+    <div id="deleteCard">
+        <div class="icon">🔒</div>
+        <h2 id="deleteTitle">Your CV is on our server</h2>
+        <p id="deleteDesc">
+            Your cover letter has been downloaded. For your privacy, you must
+            confirm deletion of your uploaded CV from the server.<br><br>
+            <strong>If you do not confirm, it will be deleted automatically.</strong>
+        </p>
+
+        <!-- Circular countdown -->
+        <div class="countdown-wrap">
+            <div class="countdown-ring">
+                <svg viewBox="0 0 72 72" width="72" height="72">
+                    <circle class="track"    cx="36" cy="36" r="30"/>
+                    <circle class="progress" cx="36" cy="36" r="30" id="progressCircle"/>
+                </svg>
+                <div class="num" id="countdownNum">5:00</div>
+            </div>
+        </div>
+
+        <button id="deleteNowBtn" onclick="confirmDelete()">
+            🗑&nbsp; OK — Delete my CV now
+        </button>
+    </div>
+</div>
+
+<!-- ── Main page ─────────────────────────────────────────────────────────── -->
+<div class="container">
+    <h1>Chat with Trav</h1>
+
+    <div id="chat" class="chat-box">
+        <div class="bot-msg">
+            Hello! I'm Trav. Let's talk about your recent projects and availability
+            to craft your cover letter.
+        </div>
+    </div>
+
+    <div class="input-area">
+        <textarea id="message"
+                  placeholder="Reply to Trav… (Enter to send, Shift+Enter for new line)">
+        </textarea>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <div class="bottom-bar" style="margin-top:16px;">
+        <div class="btn-group">
+            <button id="downloadBtn" onclick="downloadLetter()" disabled>
+                ⬇ Download Cover Letter PDF
+            </button>
+            <span id="letterHint" class="btn-hint">
+                Available once Trav has written your letter.
+            </span>
+        </div>
+        <a href="/reset">
+            <button style="background:#e74a3b;">✕ Start Over</button>
+        </a>
+    </div>
+</div>
+
+<script>
+// ── Constants (must match server CV_MAX_AGE_SECONDS) ─────────────────────────
+const MAX_SECONDS = 300;   // 5 minutes
+const CIRCUMFERENCE = 188; // 2π × 30  (SVG circle r=30)
+
+// ── State ────────────────────────────────────────────────────────────────────
+let countdownInterval = null;
+let secondsLeft       = MAX_SECONDS;
+
+// ── Element refs ─────────────────────────────────────────────────────────────
+const chatBox       = document.getElementById("chat");
+const messageBox    = document.getElementById("message");
+const downloadBtn   = document.getElementById("downloadBtn");
+const letterHint    = document.getElementById("letterHint");
+const overlay       = document.getElementById("deleteOverlay");
+const deleteCard    = document.getElementById("deleteCard");
+const countdownNum  = document.getElementById("countdownNum");
+const progressCircle= document.getElementById("progressCircle");
+const deleteNowBtn  = document.getElementById("deleteNowBtn");
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function appendMessage(html, role) {
+    const d = document.createElement("div");
+    d.className = role === "user" ? "user-msg" : "bot-msg";
+    d.innerHTML = html;
+    chatBox.appendChild(d);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ── Countdown helpers ─────────────────────────────────────────────────────────
+
+function formatTime(secs) {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function updateRing(secs) {
+    const fraction = secs / MAX_SECONDS;
+    const offset   = CIRCUMFERENCE * (1 - fraction);
+    progressCircle.style.strokeDashoffset = offset;
+    // Colour shifts red → orange as time runs out
+    const hue = Math.round(fraction * 20);   // 20 = orange-red, 0 = red
+    progressCircle.style.stroke = `hsl(${hue}, 85%, 52%)`;
+    countdownNum.textContent = formatTime(secs);
+}
+
+function startCountdown(initialSeconds) {
+    secondsLeft = initialSeconds;
+    updateRing(secondsLeft);
+
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(async () => {
+        secondsLeft -= 1;
+        updateRing(secondsLeft);
+
+        if (secondsLeft <= 0) {
+            clearInterval(countdownInterval);
+            await autoPurge();
+        }
+    }, 1000);
+}
+
+// ── Show the mandatory deletion modal ────────────────────────────────────────
+
+function showDeleteModal(startSeconds) {
+    overlay.classList.add("active");
+    startCountdown(startSeconds);
+}
+
+// ── Auto-purge (countdown hit zero) ──────────────────────────────────────────
+
+async function autoPurge() {
+    deleteNowBtn.disabled = true;
+    countdownNum.textContent = "0:00";
+
+    await callPurge();
+
+    // Update modal to reflect automatic deletion
+    deleteCard.classList.add("auto-purged");
+    document.getElementById("deleteTitle").textContent = "CV deleted automatically";
+    document.getElementById("deleteDesc").innerHTML =
+        "Your uploaded CV was deleted from the server automatically after 5 minutes of inactivity.";
+    deleteNowBtn.textContent = "✓ Close";
+    deleteNowBtn.style.background = "#1cc88a";
+    deleteNowBtn.disabled  = false;
+    deleteNowBtn.onclick   = () => overlay.classList.remove("active");
+}
+
+// ── Manual confirmation ───────────────────────────────────────────────────────
+
+async function confirmDelete() {
+    clearInterval(countdownInterval);
+    deleteNowBtn.disabled = true;
+    deleteNowBtn.innerHTML = '<span class="spinner"></span>Deleting…';
+
+    const ok = await callPurge();
+
+    if (ok) {
+        deleteCard.classList.add("auto-purged");
+        document.getElementById("deleteTitle").textContent = "CV deleted ✓";
+        document.getElementById("deleteDesc").innerHTML =
+            "Your uploaded CV has been permanently deleted from the server. Thank you!";
+        countdownNum.textContent = "✓";
+        progressCircle.style.stroke = "#1cc88a";
+        deleteNowBtn.textContent  = "Close";
+        deleteNowBtn.style.background = "#1cc88a";
+        deleteNowBtn.disabled = false;
+        deleteNowBtn.onclick  = () => overlay.classList.remove("active");
+    } else {
+        deleteNowBtn.disabled = false;
+        deleteNowBtn.innerHTML = "🗑&nbsp; OK — Delete my CV now";
+        startCountdown(secondsLeft);   // resume countdown
+    }
+}
+
+// ── Shared purge call ─────────────────────────────────────────────────────────
+
+async function callPurge() {
+    try {
+        const res  = await fetch("/purge_cv", { method: "POST" });
+        const data = await res.json();
+        return data.status === "deleted" || data.status === "already_gone";
+    } catch (_) {
+        return false;
+    }
+}
+
+// ── Check for letter ──────────────────────────────────────────────────────────
+
+async function checkForLetter() {
+    try {
+        const res  = await fetch("/has_letter");
+        const data = await res.json();
+        if (data.has_letter) {
+            downloadBtn.disabled   = false;
+            letterHint.textContent = "Your cover letter is ready to download.";
+            letterHint.style.color = "#1cc88a";
+        }
+    } catch (_) {}
+}
+
+// ── On page load: sync with server state ────────────────────────────────────
+// (handles the case where the user refreshes after downloading but before deleting)
+
+async function syncCvStatus() {
+    try {
+        const res  = await fetch("/cv_status");
+        const data = await res.json();
+
+        if (data.cv_present && !data.already_purged && data.seconds_left !== null) {
+            // PDF was already downloaded in a previous load — show the modal,
+            // starting from wherever the server-side clock says we are.
+            showDeleteModal(data.seconds_left);
+        }
+    } catch (_) {}
+}
+
+// ── Send message ──────────────────────────────────────────────────────────────
+
+async function sendMessage() {
+    const msg = messageBox.value.trim();
+    if (!msg) return;
+
+    appendMessage(escapeHtml(msg), "user");
+    messageBox.value = "";
+
+    const indicator = document.createElement("div");
+    indicator.className = "bot-msg";
+    indicator.id        = "typing";
+    indicator.innerHTML = "<em>Trav is typing…</em>";
+    chatBox.appendChild(indicator);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    try {
+        const res  = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: msg }),
+        });
+        const data = await res.json();
+        document.getElementById("typing")?.remove();
+        appendMessage(data.reply.replace(/\n/g, "<br>"), "bot");
+        checkForLetter();
+    } catch (err) {
+        document.getElementById("typing")?.remove();
+        appendMessage("⚠ Error: Could not reach Trav. Please try again.", "bot");
+    }
+}
+
+// ── Download cover letter PDF ─────────────────────────────────────────────────
+
+async function downloadLetter() {
+    downloadBtn.disabled = true;
+    downloadBtn.innerHTML = '<span class="spinner"></span>Generating PDF…';
+
+    try {
+        const response = await fetch("/download_letter_pdf");
+
+        if (!response.ok) {
+            alert("Could not generate PDF:\n" + await response.text());
+        } else {
+            const blob = await response.blob();
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement("a");
+            a.href = url; a.download = "Cover_Letter.pdf"; a.click();
+            URL.revokeObjectURL(url);
+
+            // Show mandatory deletion modal immediately after download
+            showDeleteModal(MAX_SECONDS);
+        }
+    } catch (err) {
+        alert("Network error — could not generate PDF.");
+    } finally {
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = "⬇ Download Cover Letter PDF";
+    }
+}
+
+// ── Keyboard shortcut ─────────────────────────────────────────────────────────
+
+messageBox.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+checkForLetter();
+syncCvStatus();
+</script>
+</body>
+</html>

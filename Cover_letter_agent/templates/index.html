@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trav - Start Application</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Prepare Your Application</h1>
+    <h3>Upload Your CV</h3>
+    <input type="file" id="cvFile">
+    <h3>Paste Job Description</h3>
+    <textarea id="job_text" placeholder="Paste full job description here..."></textarea>
+    <input type="text" id="job_url" placeholder="Or paste job URL here...">
+    <button type="button" onclick="initializeApp()">Load Application Data</button>
+    <br><br>
+    <button id="startChatBtn" disabled>Speak to Trav</button>
+</div>
+
+<script>
+async function initializeApp() {
+    const fileInput = document.getElementById("cvFile");
+    const jobText = document.getElementById("job_text").value;
+    const jobUrl = document.getElementById("job_url").value;
+
+    if (!fileInput.files.length) {
+        alert("Please upload your CV.");
+        return;
+    }
+    if (!jobText.trim() && !jobUrl.trim()) {
+        alert("Please provide a job description or URL.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("cv", fileInput.files[0]);
+    formData.append("job_text", jobText);
+    formData.append("job_url", jobUrl);
+
+    try {
+        const response = await fetch("/initialize", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.status === "ready") {
+            document.getElementById("startChatBtn").disabled = false;
+            alert("Ready! Click Speak to Trav.");
+        } else {
+            alert(data.error);
+        }
+    } catch (err) {
+        alert("Server connection failed. Make sure app.py is running.");
+    }
+}
+
+document.getElementById("startChatBtn").addEventListener("click", function() {
+    window.location.href = "/chat_page";
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+flask
+flask-session
+python-dotenv
+openai
+PyPDF2
+requests
+beautifulsoup4
+reportlab
