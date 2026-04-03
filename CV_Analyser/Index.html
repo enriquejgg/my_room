@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" {% if lang =='ar' %}dir="rtl"{% endif %}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ translations.app_title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:          #0c0e13;
+      --surface:     #13161e;
+      --surface2:    #1a1e2a;
+      --border:      rgba(255,255,255,0.07);
+      --accent:      #00e5a0;
+      --accent-dim:  rgba(0,229,160,0.12);
+      --accent2:     #7b61ff;
+      --warn:        #ff6b6b;
+      --warn-dim:    rgba(255,107,107,0.12);
+      --partial:     #f0a500;
+      --text:        #e8eaf0;
+      --muted:       #6b7280;
+      --mono:        'IBM Plex Mono', monospace;
+      --sans:        'IBM Plex Sans', sans-serif;
+      --display:     'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* RTL — toggled by JS adding body.rtl */
+    body.rtl                       { direction: rtl; text-align: right; }
+    body.rtl .insight-block        { border-left: none; border-right: 3px solid var(--accent); }
+    body.rtl .insight-block.warn   { border-right-color: var(--warn); }
+    body.rtl .insight-block.info   { border-right-color: var(--accent2); }
+    body.rtl .insight-list li::before { content: '← '; }
+    body.rtl .api-link             { margin-left: 0; margin-right: 8px; }
+
+    /* CJK fonts — toggled by JS adding body.cjk-zh or body.cjk-ja or body.cjk-ko */
+    body.cjk-zh { font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', var(--sans), sans-serif; }
+    body.cjk-ja { font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', var(--sans), sans-serif; }
+    body.cjk-ko { font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', var(--sans), sans-serif; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 15%, rgba(0,229,160,0.04) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(123,97,255,0.05) 0%, transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .page-wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+
+    /* Header */
+    .site-header    { display: flex; align-items: flex-start; justify-content: space-between;
+                      margin-bottom: 52px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+    .brand          { display: flex; flex-direction: column; gap: 6px; }
+    .brand-logo     { font-family: var(--display); font-size: 1.7rem; font-weight: 800;
+                      letter-spacing: -0.03em; color: var(--text); }
+    .brand-logo span{ color: var(--accent); }
+    .brand-sub      { font-size: 0.82rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+
+    .lang-wrap select {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 8px 14px; border-radius: 6px; font-family: var(--sans); font-size: 0.85rem;
+      cursor: pointer; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .lang-wrap select:hover { border-color: var(--accent); }
+    .lang-wrap select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .lang-wrap select option{ background: var(--surface2); }
+
+    .section-label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em;
+                     text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            padding: 32px; margin-bottom: 24px; transition: border-color .2s; }
+    .card:hover { border-color: rgba(255,255,255,0.12); }
+
+    /* Form */
+    .field            { margin-bottom: 28px; }
+    label.field-label { display: block; font-weight: 600; font-size: 0.9rem; color: var(--text); margin-bottom: 8px; }
+    .field-hint       { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+
+    textarea, input[type="password"] {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-family: var(--sans); font-size: 0.9rem; padding: 14px 16px;
+      transition: border-color .2s, box-shadow .2s; outline: none;
+    }
+    textarea                          { resize: vertical; min-height: 180px; line-height: 1.6; }
+    textarea:focus, input[type="password"]:focus
+                                      { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+    textarea::placeholder, input::placeholder { color: var(--muted); }
+
+    /* File drop */
+    .file-drop { position: relative; border: 1.5px dashed var(--border); border-radius: 8px;
+                 padding: 28px 20px; text-align: center; cursor: pointer;
+                 transition: border-color .2s, background .2s; }
+    .file-drop:hover, .file-drop.drag-over { border-color: var(--accent); background: var(--accent-dim); }
+    .file-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; padding: 0; }
+    .file-drop-icon       { font-size: 2rem; margin-bottom: 8px; }
+    .file-drop-text       { font-size: 0.88rem; color: var(--muted); }
+    .file-drop-text strong{ color: var(--accent); }
+    .file-name-display    { margin-top: 10px; font-family: var(--mono); font-size: 0.8rem;
+                            color: var(--accent); display: none; }
+
+    /* Toggle */
+    .toggle-row { display: flex; align-items: center; gap: 14px; padding: 18px 20px;
+                  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+                  cursor: pointer; transition: border-color .2s; }
+    .toggle-row:hover    { border-color: rgba(255,255,255,0.15); }
+    .toggle-switch       { width: 44px; height: 24px; background: var(--surface); border: 1px solid var(--border);
+                           border-radius: 12px; position: relative; flex-shrink: 0; transition: background .25s; }
+    .toggle-switch::after{ content: ''; position: absolute; width: 18px; height: 18px;
+                           background: var(--muted); border-radius: 50%; top: 2px; left: 2px;
+                           transition: transform .25s, background .25s; }
+    #use_ai { display: none; }
+    #use_ai:checked + label .toggle-switch        { background: var(--accent-dim); border-color: var(--accent); }
+    #use_ai:checked + label .toggle-switch::after { background: var(--accent); transform: translateX(20px); }
+    .toggle-text strong  { display: block; font-size: 0.9rem; font-weight: 600; }
+    .toggle-text span    { font-size: 0.8rem; color: var(--muted); }
+
+    /* Privacy badge */
+    .privacy-badge { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+                     background: rgba(0,229,160,0.06); border: 1px solid rgba(0,229,160,0.2);
+                     border-radius: 8px; font-size: 0.84rem; color: #7ecfb5; line-height: 1.5; }
+    .privacy-badge .icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+    #api_key_group { display: none; margin-top: 20px; }
+    .api-link      { color: var(--accent); font-size: 0.8rem; text-decoration: none; margin-left: 8px; }
+    .api-link:hover{ text-decoration: underline; }
+
+    /* Submit */
+    .btn-submit {
+      width: 100%; padding: 16px; background: var(--accent); color: #0c0e13; border: none;
+      border-radius: 8px; font-family: var(--display); font-size: 1rem; font-weight: 700;
+      letter-spacing: 0.02em; cursor: pointer; transition: opacity .2s, transform .15s;
+    }
+    .btn-submit:hover:not(:disabled)  { opacity: 0.88; transform: translateY(-1px); }
+    .btn-submit:active:not(:disabled) { transform: translateY(0); }
+    .btn-submit:disabled              { opacity: 0.4; cursor: not-allowed; }
+
+    /* Loading */
+    .loading-wrap { display: none; text-align: center; padding: 36px 20px; }
+    .loader { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent);
+              border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-wrap p { color: var(--muted); font-size: 0.88rem; }
+
+    /* Error */
+    .error-box { display: none; padding: 16px 20px; background: var(--warn-dim);
+                 border: 1px solid rgba(255,107,107,0.3); border-radius: 8px; color: #ff9a9a;
+                 font-size: 0.88rem; line-height: 1.5; margin-top: 16px; }
+
+    /* Results */
+    #results { display: none; }
+
+    .scores-grid       { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 16px; }
+    .score-tile        { background: var(--surface2); border: 1px solid var(--border);
+                         border-radius: 10px; padding: 20px 18px; text-align: center; }
+    .score-tile-label  { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+                         text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .score-tile-value  { font-family: var(--display); font-size: 2.4rem; font-weight: 800; line-height: 1; }
+    .score-bar         { height: 4px; background: var(--border); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+    .score-bar-fill    { height: 100%; border-radius: 2px; transition: width .8s cubic-bezier(.16,1,.3,1); }
+
+    .overall-tile {
+      border: 1px solid rgba(0,229,160,0.25);
+      background: linear-gradient(135deg, rgba(0,229,160,0.06) 0%, rgba(123,97,255,0.06) 100%);
+      border-radius: 10px; padding: 24px; display: flex; align-items: center;
+      justify-content: space-between; gap: 20px;
+    }
+    .overall-label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em;
+                     text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    .overall-value { font-family: var(--display); font-size: 4rem; font-weight: 800;
+                     letter-spacing: -0.04em; line-height: 1; }
+    .overall-sub   { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    .gauge-svg  { width: 80px; height: 80px; transform: rotate(-90deg); }
+    .gauge-bg   { fill: none; stroke: var(--border); stroke-width: 6; }
+    .gauge-fill { fill: none; stroke-width: 6; stroke-linecap: round;
+                  transition: stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1); }
+
+    .c-green  { color: var(--accent);  }  .fill-green { background: var(--accent);  }
+    .c-amber  { color: var(--partial); }  .fill-amber { background: var(--partial); }
+    .c-red    { color: var(--warn);    }  .fill-red   { background: var(--warn);    }
+
+    .detail-heading { font-family: var(--display); font-size: 1rem; font-weight: 700; color: var(--text);
+                      margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+                      display: flex; align-items: center; gap: 8px; }
+
+    .tag-group       { margin-bottom: 16px; }
+    .tag-group-label { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+                       text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag  { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+            border-radius: 20px; font-size: 0.78rem; font-family: var(--mono);
+            font-weight: 500; border: 1px solid transparent; }
+    .tag.full    { background: rgba(0,229,160,0.1); color: #6ee8be; border-color: rgba(0,229,160,0.2);  }
+    .tag.partial { background: rgba(240,165,0,0.1); color: #f5c842; border-color: rgba(240,165,0,0.25); }
+    .tag.missing { background: var(--warn-dim);     color: #ff9a9a; border-color: rgba(255,107,107,0.25); }
+    .tag.extra   { background: rgba(123,97,255,0.1);color: #a99aff; border-color: rgba(123,97,255,0.25); }
+
+    .exp-row       { display: flex; gap: 16px; }
+    .exp-box       { flex: 1; background: var(--surface2); border: 1px solid var(--border);
+                     border-radius: 8px; padding: 16px; text-align: center; }
+    .exp-box-label { font-size: 0.72rem; font-family: var(--mono); color: var(--muted);
+                     text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .exp-box-value { font-family: var(--display); font-size: 2rem; font-weight: 800; }
+
+    .insight-block { padding: 16px 18px; background: var(--surface2); border-radius: 8px;
+                     border-left: 3px solid var(--accent); margin-bottom: 12px;
+                     font-size: 0.88rem; line-height: 1.7; color: #c9cdd6; }
+    .insight-block.warn { border-left-color: var(--warn); }
+    .insight-block.info { border-left-color: var(--accent2); }
+    .insight-list   { list-style: none; }
+    .insight-list li{ padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; color: #c9cdd6; }
+    .insight-list li:last-child { border-bottom: none; }
+    .insight-list li::before    { content: '→ '; color: var(--accent); }
+
+    .pii-notice { margin-top: 20px; padding: 16px 18px; background: rgba(0,229,160,0.05);
+                  border: 1px solid rgba(0,229,160,0.2); border-radius: 8px;
+                  font-size: 0.82rem; color: #7ecfb5; }
+    .pii-notice strong { display: block; margin-bottom: 6px; }
+
+    /* ── Input tabs (URL / Paste text) ─────────────────────────────────────── */
+    .input-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .input-tab {
+      padding: 9px 18px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color .2s, border-color .2s;
+      margin-bottom: -1px;
+    }
+    .input-tab:hover  { color: var(--text); }
+    .input-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-panel { padding-top: 14px; }
+
+    /* URL input row */
+    .url-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .url-row #job_url_input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      min-width: 0;
+    }
+    .url-row #job_url_input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+    .url-row #job_url_input::placeholder { color: var(--muted); }
+
+    .btn-fetch {
+      padding: 12px 20px;
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s, color .2s, opacity .2s;
+      flex-shrink: 0;
+    }
+    .btn-fetch:hover:not(:disabled) { background: var(--accent); color: #0c0e13; }
+    .btn-fetch:disabled              { opacity: 0.4; cursor: not-allowed; }
+
+    /* Fetch status badge */
+    .fetch-status {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    .fetch-status.ok   { background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.25); color: #7ecfb5; }
+    .fetch-status.err  { background: var(--warn-dim); border: 1px solid rgba(255,107,107,0.3); color: #ff9a9a; }
+
+    @media (max-width: 600px) {
+      .scores-grid  { grid-template-columns: 1fr 1fr; }
+      .overall-tile { flex-direction: column; align-items: flex-start; }
+      .exp-row      { flex-direction: column; }
+      .site-header  { flex-direction: column; gap: 16px; }
+      .url-row      { flex-direction: column; }
+    }
+  </style>
+</head>
+<body class="{% if lang == 'ar' %}rtl{% elif lang == 'zh' %}cjk-zh{% elif lang == 'ja' %}cjk-ja{% elif lang == 'ko' %}cjk-ko{% endif %}">
+
+<div class="page-wrap">
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-logo">CV<span>Match</span></div>
+      <div class="brand-sub" data-i18n="app_subtitle">{{ translations.app_subtitle }}</div>
+    </div>
+    <div class="lang-wrap">
+      <select id="languageSelect" onchange="changeLanguage(this.value)">
+        {% for code, name in supported_languages.items() %}
+        <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </header>
+
+  <!-- Form card -->
+  <div class="card">
+    <div class="section-label" data-i18n="section_input">{{ translations.section_input if translations.section_input else '01 — Input' }}</div>
+
+    <form id="mainForm" novalidate>
+
+      <!-- Job description — tabbed: URL fetch OR manual paste -->
+      <div class="field">
+        <label class="field-label" data-i18n="form_job_url_label">{{ translations.form_job_url_label }}</label>
+
+        <!-- Tab switcher -->
+        <div class="input-tabs" role="tablist">
+          <button type="button" class="input-tab active" id="tabUrl"
+            role="tab" aria-selected="true" aria-controls="panelUrl"
+            onclick="switchTab('url')" data-i18n="url_tab">{{ translations.url_tab if translations.url_tab else 'Paste from URL' }}</button>
+          <button type="button" class="input-tab" id="tabText"
+            role="tab" aria-selected="false" aria-controls="panelText"
+            onclick="switchTab('text')" data-i18n="text_tab">{{ translations.text_tab if translations.text_tab else 'Paste Text' }}</button>
+        </div>
+
+        <!-- URL panel — shown when URL tab is active -->
+        <div id="panelUrl" class="tab-panel" role="tabpanel" aria-labelledby="tabUrl">
+          <div class="url-row">
+            <input
+              type="text"
+              id="job_url_input"
+              data-i18n-placeholder="url_placeholder"
+              placeholder="{{ translations.url_placeholder if translations.url_placeholder else 'https://www.linkedin.com/jobs/view/...' }}"
+              autocomplete="off"
+            />
+            <button type="button" class="btn-fetch" id="fetchBtn" onclick="fetchFromUrl()">
+              <span id="fetchBtnText" data-i18n="url_fetch_btn">{{ translations.url_fetch_btn if translations.url_fetch_btn else 'Fetch Job Description' }}</span>
+            </button>
+          </div>
+          <div id="fetchStatus" class="fetch-status" style="display:none;"></div>
+          <p class="field-hint" data-i18n="url_fallback_hint">{{ translations.url_fallback_hint if translations.url_fallback_hint else 'If the fetch fails, paste the job description manually in the Text tab.' }}</p>
+        </div>
+
+        <!-- Text panel — shown when Text tab is active (empty, textarea is below always) -->
+        <div id="panelText" class="tab-panel" role="tabpanel" aria-labelledby="tabText" style="display:none;"></div>
+
+        <!-- Textarea NEVER moves — always at this fixed DOM position inside the form.
+             It is visible in both tabs; the label above it changes context via the tabs. -->
+        <textarea
+          id="job_description"
+          name="job_description"
+          data-i18n-placeholder="form_job_url_placeholder"
+          placeholder="{{ translations.form_job_url_placeholder }}"
+          style="margin-top:10px;"
+        ></textarea>
+        <p class="field-hint" id="urlEditHint" style="display:none;"
+          data-i18n="url_edit_hint">{{ translations.url_edit_hint if translations.url_edit_hint else 'You can edit the extracted text below before analysing.' }}</p>
+      </div>
+
+      <!-- CV upload -->
+      <div class="field">
+        <label class="field-label" for="cv_file" data-i18n="form_cv_label">{{ translations.form_cv_label }}</label>
+        <div class="file-drop" id="fileDropZone">
+          <input type="file" id="cv_file" name="cv_file" accept=".pdf,.docx,.txt" />
+          <div class="file-drop-icon">📄</div>
+          <div class="file-drop-text">
+            <strong data-i18n="choose_file">{{ translations.choose_file if translations.choose_file else 'Choose file' }}</strong><span data-i18n="drag_drop"> {{ translations.drag_drop if translations.drag_drop else 'or drag & drop' }}</span><br />
+            <span data-i18n="form_cv_help">{{ translations.form_cv_help }}</span>
+          </div>
+          <div class="file-name-display" id="fileNameDisplay"></div>
+        </div>
+      </div>
+
+      <!-- AI toggle -->
+      <div class="field">
+        <input type="checkbox" id="use_ai" name="use_ai" />
+        <label for="use_ai" class="toggle-row">
+          <div class="toggle-switch"></div>
+          <div class="toggle-text">
+            <strong data-i18n="ai_toggle_title">{{ translations.ai_toggle_title if translations.ai_toggle_title else '🤖 AI-Powered Analysis' }}</strong>
+            <span data-i18n="ai_toggle_desc">{{ translations.ai_toggle_desc if translations.ai_toggle_desc else 'Deeper insights, strengths/weaknesses & hiring recommendation (requires API key)' }}</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Privacy badge -->
+      <div class="field">
+        <div class="privacy-badge">
+          <span class="icon">🔒</span>
+          <span>
+            <strong data-i18n="privacy_badge_title">{{ translations.privacy_badge_title if translations.privacy_badge_title else 'Privacy by default:' }}</strong>
+            <span data-i18n="privacy_badge_text"> {{ translations.privacy_badge_text if translations.privacy_badge_text else 'Your name, email, phone and address are automatically removed before any analysis.' }}</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- API key (conditional) -->
+      <div id="api_key_group" class="field" style="display:none;">
+        {% if env_key_set %}
+        <div class="privacy-badge" style="background:rgba(0,229,160,0.06); border-color:rgba(0,229,160,0.25);">
+          <span class="icon">✅</span>
+          <span>
+            <strong data-i18n="api_key_configured_title">{{ translations.api_key_configured_title if translations.api_key_configured_title else 'API key configured on server.' }}</strong>
+            <span data-i18n="api_key_configured_text"> {{ translations.api_key_configured_text if translations.api_key_configured_text else 'No key entry needed — your ANTHROPIC_API_KEY environment variable is active.' }}</span>
+          </span>
+        </div>
+        {% else %}
+        <label class="field-label" for="api_key">
+          <span data-i18n="api_key_label">{{ translations.api_key_label if translations.api_key_label else '🔑 Anthropic API Key' }}</span>
+          <a href="https://console.anthropic.com/" target="_blank" class="api-link" data-i18n="api_key_get">{{ translations.api_key_get if translations.api_key_get else 'Get yours →' }}</a>
+        </label>
+        <input type="password" id="api_key" name="api_key"
+          data-i18n-placeholder="api_key_placeholder"
+          placeholder="sk-ant-api03-…" autocomplete="off" />
+        <p class="field-hint" style="color:#ff9a9a;" data-i18n="api_key_hint">{{ translations.api_key_hint if translations.api_key_hint else 'Your key is used only for this request and never stored.' }}</p>
+        {% endif %}
+      </div>
+
+      <button type="button" class="btn-submit" id="submitBtn" data-i18n="button_analyze">{{ translations.button_analyze }}</button>
+    </form>
+
+    <div class="loading-wrap" id="loadingWrap">
+      <div class="loader"></div>
+      <p id="loadingMsg" data-i18n="loading_message">{{ translations.loading_message }}</p>
+    </div>
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <div id="results"></div>
+
+</div>
+
+<script>
+// All translations for every language, embedded at render time by Flask/Jinja2.
+// This lets us switch language entirely client-side with no HTTP round-trip.
+const ALL_TRANSLATIONS = {{ all_translations | tojson }};
+const ENV_KEY_SET      = {{ 'true' if env_key_set else 'false' }};
+
+let currentLang = '{{ lang }}';
+let T = ALL_TRANSLATIONS[currentLang] || ALL_TRANSLATIONS['en'];
+
+// Cache the last comparison result so we can re-render it when the language changes.
+let _lastResult = null;  // { type: 'standard'|'ai', data: {...} }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// changeLanguage(lang)
+//
+// Switches the entire UI to the selected language without a page reload.
+// Called by the <select> onchange handler.
+//
+// What it does:
+//   1. Updates the global T object to the new language dict.
+//   2. Sets <html lang> and <html dir> for accessibility and browser behaviour.
+//   3. Toggles body.rtl so CSS direction rules apply instantly.
+//   4. Walks every [data-i18n] element and replaces textContent.
+//   5. Walks every [data-i18n-placeholder] element and replaces placeholder.
+//   6. Re-renders any visible results in the new language (data unchanged).
+//   7. Updates the URL ?lang= param so the page is bookmarkable/shareable.
+// ─────────────────────────────────────────────────────────────────────────────
+function changeLanguage(lang) {
+  currentLang = lang;
+  T = ALL_TRANSLATIONS[lang] || ALL_TRANSLATIONS['en'];
+
+  const isRTL    = (lang === 'ar');
+  const isCJK_ZH = (lang === 'zh');
+  const isCJK_JA = (lang === 'ja');
+  const isCJK_KO = (lang === 'ko');
+
+  // Update <html> attributes for accessibility and browser behaviour
+  document.documentElement.lang = lang;
+  document.documentElement.dir  = isRTL ? 'rtl' : 'ltr';
+
+  // Toggle layout/font classes — only one can be active at a time
+  document.body.classList.toggle('rtl',    isRTL);
+  document.body.classList.toggle('cjk-zh', isCJK_ZH);
+  document.body.classList.toggle('cjk-ja', isCJK_JA);
+  document.body.classList.toggle('cjk-ko', isCJK_KO);
+
+  document.title = T.app_title || 'CV Matcher Pro';
+
+  // Update static text nodes
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (T[key] !== undefined) el.textContent = T[key];
+  });
+
+  // Update placeholder attributes
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (T[key] !== undefined) el.placeholder = T[key];
+  });
+
+  // Re-render results in the new language (numbers stay, labels change)
+  if (_lastResult) {
+    const resultsDiv = document.getElementById('results');
+    if (_lastResult.type === 'ai') renderAI(_lastResult.data);
+    else                           renderStandard(_lastResult.data);
+    resultsDiv.style.display = 'block';
+  }
+
+  // Keep URL in sync so browser back/forward and bookmarks work
+  const url = new URL(window.location);
+  url.searchParams.set('lang', lang);
+  window.history.replaceState({}, '', url);
+}
+
+// ── Tab switching (URL / Paste text) ─────────────────────────────────────────
+let _activeTab = 'url';
+
+/**
+ * Switch between the URL-fetch tab and the manual-paste tab.
+ *
+ * The textarea NEVER moves in the DOM — it stays in a fixed position inside
+ * the <form> at all times.  Only the panels ABOVE the textarea are shown or
+ * hidden.  This avoids any risk of the browser losing the textarea's form
+ * association due to DOM re-parenting, which was causing constraint-validation
+ * errors on some browsers.
+ */
+function switchTab(tab) {
+  _activeTab = tab;
+
+  const tabUrl   = document.getElementById('tabUrl');
+  const tabText  = document.getElementById('tabText');
+  const panelUrl = document.getElementById('panelUrl');
+  const panelText= document.getElementById('panelText');
+  const editHint = document.getElementById('urlEditHint');
+  const textarea = document.getElementById('job_description');
+
+  if (tab === 'url') {
+    tabUrl.classList.add('active');
+    tabText.classList.remove('active');
+    tabUrl.setAttribute('aria-selected', 'true');
+    tabText.setAttribute('aria-selected', 'false');
+    panelUrl.style.display  = 'block';
+    panelText.style.display = 'none';
+    editHint.style.display  = textarea.value.trim() ? 'block' : 'none';
+  } else {
+    tabText.classList.add('active');
+    tabUrl.classList.remove('active');
+    tabText.setAttribute('aria-selected', 'true');
+    tabUrl.setAttribute('aria-selected', 'false');
+    panelUrl.style.display  = 'none';
+    panelText.style.display = 'block';
+    editHint.style.display  = 'none';
+    textarea.focus();
+  }
+}
+
+// ── URL fetcher ───────────────────────────────────────────────────────────────
+/**
+ * POST the entered URL to /fetch_job_url, then populate the textarea
+ * with the extracted text.  Shows a status badge with the site name
+ * and character count on success, or an error message on failure.
+ */
+async function fetchFromUrl() {
+  const urlInput  = document.getElementById('job_url_input');
+  const fetchBtn  = document.getElementById('fetchBtn');
+  const fetchText = document.getElementById('fetchBtnText');
+  const status    = document.getElementById('fetchStatus');
+  const textarea  = document.getElementById('job_description');
+  const editHint  = document.getElementById('urlEditHint');
+
+  const url = urlInput.value.trim();
+  if (!url) { urlInput.focus(); return; }
+
+  // Loading state
+  fetchBtn.disabled   = true;
+  fetchText.textContent = T.url_fetching || 'Fetching\u2026';
+  status.style.display  = 'none';
+  status.className      = 'fetch-status';
+
+  try {
+    const formData = new FormData();
+    formData.append('url', url);
+
+    const resp = await fetch('/fetch_job_url', { method: 'POST', body: formData });
+    const data = await resp.json();
+
+    if (!resp.ok) throw new Error(data.error || 'Unknown error');
+
+    // Populate textarea with extracted text
+    textarea.value = data.text;
+
+    // Show success badge
+    const siteName  = data.site_name  || '';
+    const charCount = data.char_count || data.text.length;
+    status.className   = 'fetch-status ok';
+    status.innerHTML   =
+      `${T.url_success || '\u2713 Job description fetched from'} <strong>${siteName}</strong> &mdash; ` +
+      `${charCount.toLocaleString()} ${T.url_char_count || 'characters extracted'}`;
+    status.style.display = 'block';
+
+    // Show the edit hint below the textarea
+    editHint.style.display = 'block';
+
+  } catch (err) {
+    status.className     = 'fetch-status err';
+    status.textContent   = `${T.url_error_prefix || 'Could not fetch URL:'} ${err.message}`;
+    status.style.display = 'block';
+  } finally {
+    fetchBtn.disabled     = false;
+    fetchText.textContent = T.url_fetch_btn || 'Fetch Job Description';
+  }
+}
+
+// Allow pressing Enter in the URL input to trigger fetch
+document.addEventListener('DOMContentLoaded', () => {
+  const urlInput = document.getElementById('job_url_input');
+  if (urlInput) {
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); fetchFromUrl(); }
+    });
+  }
+});
+
+// ── File drop zone ─────────────────────────────────────────────────────────
+const dropZone        = document.getElementById('fileDropZone');
+const fileInput       = document.getElementById('cv_file');
+const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) {
+    fileNameDisplay.textContent   = '✓ ' + fileInput.files[0].name;
+    fileNameDisplay.style.display = 'block';
+  }
+});
+['dragenter','dragover'].forEach(ev =>
+  dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('drag-over'); })
+);
+['dragleave','drop'].forEach(ev =>
+  dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('drag-over'); })
+);
+dropZone.addEventListener('drop', e => {
+  const f = e.dataTransfer.files[0];
+  if (f) { fileInput.files = e.dataTransfer.files; fileNameDisplay.textContent = '✓ ' + f.name; fileNameDisplay.style.display = 'block'; }
+});
+
+// ── AI toggle ──────────────────────────────────────────────────────────────
+document.getElementById('use_ai').addEventListener('change', function () {
+  const grp = document.getElementById('api_key_group');
+  const key = document.getElementById('api_key');
+  if (this.checked) { grp.style.display = 'block'; if (key && !ENV_KEY_SET) key.required = true; }
+  else              { grp.style.display = 'none';  if (key) key.required = false; }
+});
+
+// ── Form submit ────────────────────────────────────────────────────────────
+// Using a click handler on the button (type="button") instead of a form
+// submit listener — this makes it impossible for the browser to trigger
+// native constraint validation, which was causing "The string did not match
+// the expected pattern" even after adding novalidate to the form.
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const textarea  = document.getElementById('job_description');
+  const urlInput  = document.getElementById('job_url_input');
+  const cvFile    = document.getElementById('cv_file');
+  const errorBox  = document.getElementById('errorBox');
+
+  // If URL tab is active, textarea empty, but URL typed → auto-fetch first
+  if (_activeTab === 'url' && !textarea.value.trim() && urlInput && urlInput.value.trim()) {
+    await fetchFromUrl();
+    if (!textarea.value.trim()) return; // fetch failed — error badge already shown
+  }
+
+  // JS validation
+  if (!textarea.value.trim()) {
+    errorBox.textContent   = T.form_job_url_label
+      ? `⚠ ${T.form_job_url_label} is required.`
+      : '⚠ Job description is required.';
+    errorBox.style.display = 'block';
+    return;
+  }
+  if (!cvFile.files || !cvFile.files[0]) {
+    errorBox.textContent   = T.form_cv_label
+      ? `⚠ ${T.form_cv_label} is required.`
+      : '⚠ CV file is required.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  const form     = document.getElementById('mainForm');
+  const formData = new FormData(form);
+  const useAI    = document.getElementById('use_ai').checked;
+  const loading  = document.getElementById('loadingWrap');
+  const loadMsg  = document.getElementById('loadingMsg');
+  const results  = document.getElementById('results');
+  const btn      = document.getElementById('submitBtn');
+
+  errorBox.style.display = 'none';
+  results.style.display  = 'none';
+  results.innerHTML      = '';
+  _lastResult            = null;
+  loading.style.display  = 'block';
+  btn.disabled           = true;
+  loadMsg.textContent    = useAI ? T.ai_loading_message : T.loading_message;
+
+  try {
+    const resp = await fetch(useAI ? '/compare_ai' : '/compare', { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Server error');
+
+    if (useAI && data.ai_analysis) {
+      _lastResult = { type: 'ai',       data: data.ai_analysis };
+      renderAI(data.ai_analysis);
+    } else {
+      _lastResult = { type: 'standard', data };
+      renderStandard(data);
+    }
+    results.style.display = 'block';
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    errorBox.innerHTML = '⚠ ' + err.message;
+    errorBox.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+    btn.disabled          = false;
+    loadMsg.textContent   = T.loading_message;
+  }
+});
+
+// ── Render helpers ─────────────────────────────────────────────────────────
+function scoreColour(n) {
+  if (n >= 70) return { text: 'c-green', bar: 'fill-green' };
+  if (n >= 40) return { text: 'c-amber', bar: 'fill-amber' };
+  return              { text: 'c-red',   bar: 'fill-red'   };
+}
+
+const CIRC = 2 * Math.PI * 34;
+function gaugeHTML(pct) {
+  const offset = CIRC - (pct / 100) * CIRC;
+  const col = pct >= 70 ? 'var(--accent)' : pct >= 40 ? 'var(--partial)' : 'var(--warn)';
+  return `<svg class="gauge-svg" viewBox="0 0 80 80"><circle class="gauge-bg" cx="40" cy="40" r="34"/>
+    <circle class="gauge-fill" cx="40" cy="40" r="34" stroke="${col}"
+      stroke-dasharray="${CIRC}" stroke-dashoffset="${offset}"/></svg>`;
+}
+
+// makeTags() uses T.none so the "None" fallback respects the active language.
+function makeTags(arr, cls) {
+  if (!arr || !arr.length)
+    return `<span style="color:var(--muted);font-size:.8rem">${T.none || 'None'}</span>`;
+  return `<div class="tags">${arr.map(s => `<span class="tag ${cls}">${s}</span>`).join('')}</div>`;
+}
+
+function piiBlock(masked) {
+  if (!masked || !Object.keys(masked).length) return '';
+  const lines = Object.entries(masked).map(([k,v]) => `<strong>${k}</strong>: ${v}`).join(' · ');
+  return `<div class="pii-notice">${T.privacy_protected || '🔒 Privacy protection applied:'} ${lines}</div>`;
+}
+
+// ── renderStandard ─────────────────────────────────────────────────────────
+// All label strings are drawn from T so calling this again after changeLanguage()
+// automatically produces fully translated output.
+function renderStandard(d) {
+  const sd = d.skills_details || {}, cd = d.certifications_details || {}, ed = d.experience_details || {};
+  const tiles = [
+    [T.experience_match,     d.experience_match],
+    [T.skills_match,         d.skills_match],
+    [T.certifications_match, d.certifications_match],
+  ].map(([label, val]) => {
+    const c = scoreColour(val);
+    return `<div class="score-tile"><div class="score-tile-label">${label}</div>
+      <div class="score-tile-value ${c.text}">${val}%</div>
+      <div class="score-bar"><div class="score-bar-fill ${c.bar}" style="width:${val}%"></div></div></div>`;
+  }).join('');
+  const oc = scoreColour(d.overall_score);
+
+  document.getElementById('results').innerHTML = `
+    <div class="card">
+      <div class="section-label">${T.section_score}</div>
+      <div class="scores-grid">${tiles}</div>
+      <div class="overall-tile">
+        <div><div class="overall-label">${T.overall_score}</div>
+          <div class="overall-value ${oc.text}">${d.overall_score}%</div>
+          <div class="overall-sub">${T.weight_label}</div></div>
+        ${gaugeHTML(d.overall_score)}</div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">${T.section_experience}</div>
+      <div class="detail-heading">📅 ${T.experience_details}</div>
+      <div class="exp-row">
+        <div class="exp-box"><div class="exp-box-label">${T.required_label}</div>
+          <div class="exp-box-value ${scoreColour(d.experience_match).text}">${ed.required||0}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">${T.years}</div></div>
+        <div class="exp-box"><div class="exp-box-label">${T.candidate_label}</div>
+          <div class="exp-box-value ${scoreColour(d.experience_match).text}">${ed.candidate||0}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">${T.years}</div></div>
+        <div class="exp-box"><div class="exp-box-label">${T.meets_req_label}</div>
+          <div class="exp-box-value" style="font-size:1.4rem">${ed.meets_requirement ? T.meets_req_yes : T.meets_req_no}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">${T.section_skills}</div>
+      <div class="detail-heading">💼 ${T.skills_analysis}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.matched_label} (${(sd.matching||[]).length})</div>${makeTags(sd.matching,'full')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.partial_label} (${(sd.partial||[]).length})</div>${makeTags(sd.partial,'partial')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.missing_label} (${(sd.missing||[]).length})</div>${makeTags(sd.missing,'missing')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.additional_label} (${(sd.additional||[]).length})</div>${makeTags(sd.additional,'extra')}</div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">${T.section_certs}</div>
+      <div class="detail-heading">🎓 ${T.certifications_analysis}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.matched_label} (${(cd.matching||[]).length})</div>${makeTags(cd.matching,'full')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.partial_label} (${(cd.partial||[]).length})</div>${makeTags(cd.partial,'partial')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.missing_label} (${(cd.missing||[]).length})</div>${makeTags(cd.missing,'missing')}</div>
+    </div>
+    ${piiBlock(d.pii_masked)}`;
+}
+
+// ── renderAI ───────────────────────────────────────────────────────────────
+function renderAI(ai) {
+  const ea = ai.experience_analysis||{}, sa = ai.skills_analysis||{}, ca = ai.certifications_analysis||{};
+  const tiles = [
+    [T.experience_match,     ea.score||0],
+    [T.skills_match,         sa.score||0],
+    [T.certifications_match, ca.score||0],
+  ].map(([label, val]) => {
+    const c = scoreColour(val);
+    return `<div class="score-tile"><div class="score-tile-label">${label}</div>
+      <div class="score-tile-value ${c.text}">${val}%</div>
+      <div class="score-bar"><div class="score-bar-fill ${c.bar}" style="width:${val}%"></div></div></div>`;
+  }).join('');
+  const overall = ai.overall_match||0, oc = scoreColour(overall);
+
+  document.getElementById('results').innerHTML = `
+    <div class="card">
+      <div class="section-label">${T.section_score_ai}</div>
+      <div class="scores-grid">${tiles}</div>
+      <div class="overall-tile">
+        <div><div class="overall-label">${T.overall_score_ai}</div>
+          <div class="overall-value ${oc.text}">${overall}%</div>
+          <div class="overall-sub">${T.ai_assessed_label}</div></div>
+        ${gaugeHTML(overall)}</div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">${T.section_experience}</div>
+      <div class="detail-heading">📅 ${T.experience_details}</div>
+      <div class="exp-row">
+        <div class="exp-box"><div class="exp-box-label">${T.required_label}</div>
+          <div class="exp-box-value ${scoreColour(ea.score||0).text}">${ea.required_years??'—'}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">${T.years}</div></div>
+        <div class="exp-box"><div class="exp-box-label">${T.candidate_label}</div>
+          <div class="exp-box-value ${scoreColour(ea.score||0).text}">${ea.candidate_years??'—'}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">${T.years}</div></div>
+      </div>
+      ${ea.assessment?`<div class="insight-block" style="margin-top:16px">${ea.assessment}</div>`:''}
+    </div>
+
+    <div class="card">
+      <div class="section-label">${T.section_skills}</div>
+      <div class="detail-heading">💼 ${T.skills_analysis}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.matched_label} (${(sa.matched_skills||[]).length})</div>${makeTags(sa.matched_skills,'full')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.partial_label} (${(sa.partial_skills||[]).length})</div>${makeTags(sa.partial_skills,'partial')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.missing_label} (${(sa.missing_skills||[]).length})</div>${makeTags(sa.missing_skills,'missing')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.additional_label} (${(sa.additional_skills||[]).length})</div>${makeTags(sa.additional_skills,'extra')}</div>
+      ${sa.assessment?`<div class="insight-block" style="margin-top:8px">${sa.assessment}</div>`:''}
+    </div>
+
+    <div class="card">
+      <div class="section-label">${T.section_certs}</div>
+      <div class="detail-heading">🎓 ${T.certifications_analysis}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.matched_label} (${(ca.matched_certifications||[]).length})</div>${makeTags(ca.matched_certifications,'full')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.partial_label} (${(ca.partial_certifications||[]).length})</div>${makeTags(ca.partial_certifications,'partial')}</div>
+      <div class="tag-group"><div class="tag-group-label">${T.missing_label} (${(ca.missing_certifications||[]).length})</div>${makeTags(ca.missing_certifications,'missing')}</div>
+      ${ca.assessment?`<div class="insight-block" style="margin-top:8px">${ca.assessment}</div>`:''}
+    </div>
+
+    <div class="card">
+      <div class="section-label">${T.section_ai}</div>
+      <div class="detail-heading">🤖 ${T.ai_insights_title}</div>
+      ${(ai.strengths||[]).length?`<div style="margin-bottom:20px">
+        <div class="tag-group-label" style="margin-bottom:10px">${T.strengths_label}</div>
+        <ul class="insight-list">${(ai.strengths||[]).map(s=>`<li>${s}</li>`).join('')}</ul></div>`:''}
+      ${(ai.weaknesses||[]).length?`<div style="margin-bottom:20px">
+        <div class="tag-group-label" style="margin-bottom:10px">${T.weaknesses_label}</div>
+        <ul class="insight-list">${(ai.weaknesses||[]).map(w=>`<li>${w}</li>`).join('')}</ul></div>`:''}
+      ${ai.recommendation?`<div style="margin-bottom:20px">
+        <div class="tag-group-label" style="margin-bottom:8px">${T.recommendation_label}</div>
+        <div class="insight-block">${ai.recommendation}</div></div>`:''}
+      ${ai.cultural_fit?`<div style="margin-bottom:20px">
+        <div class="tag-group-label" style="margin-bottom:8px">${T.cultural_fit_label}</div>
+        <div class="insight-block info">${ai.cultural_fit}</div></div>`:''}
+      ${ai.growth_potential?`<div>
+        <div class="tag-group-label" style="margin-bottom:8px">${T.growth_potential_label}</div>
+        <div class="insight-block">${ai.growth_potential}</div></div>`:''}
+    </div>
+    ${piiBlock(ai.pii_masked)}`;
+}
+</script>
+</body>
+</html>
