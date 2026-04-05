@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Classifier</title>
+    <style>
+        /* Estilos generales para el cuerpo de la página */
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilos para el contenedor principal */
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        /* Estilos para el título */
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        /* Estilos para las pestañas */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        /* Estilos para cada pestaña */
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        /* Estilos para la pestaña activa */
+        .tab.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        /* Estilos para el contenido de las pestañas */
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+        /* Estilos para el contenido de la pestaña activa */
+        .tab-content.active {
+            display: block;
+        }
+        /* Estilos para el área de texto y el campo de entrada de texto */
+        textarea, input[type="text"] {
+            width: calc(100% - 22px); /* Ajuste para padding y borde */
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        /* Estilos específicos para el área de texto */
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        /* Estilos para el botón */
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        /* Estilos para el botón al pasar el ratón */
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* Estilos para el contenedor de resultados */
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 18px;
+            text-align: center;
+        }
+        /* Estilos para el resultado de noticias reales */
+        .result-real {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        /* Estilos para el resultado de noticias falsas */
+        .result-fake {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        /* Estilos para el resultado de error */
+        .result-error {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        /* Estilos para el loader */
+        .loader {
+            border: 5px solid #f3f3f3; /* Light grey */
+            border-top: 5px solid #007bff; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none; /* Hidden by default */
+        }
+        /* Animación para el loader */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Estilos para la vista previa del texto */
+        .text-preview {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        /* Estilos para la sugerencia */
+        .suggestion {
+            margin-top: 10px;
+            font-style: italic;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Contenedor principal -->
+    <div class="container">
+        <h1>Fake News Classifier</h1>
+
+        <!-- Pestañas para cambiar entre entrada de texto y URL -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('text')">Text Input</div>
+            <div class="tab" onclick="switchTab('url')">URL Input</div>
+        </div>
+
+        <!-- Contenido de la pestaña de entrada de texto -->
+        <div id="text-tab" class="tab-content active">
+            <textarea id="newsText" placeholder="Enter news text here..."></textarea>
+            <button onclick="classifyNews('text')">Classify News</button>
+        </div>
+
+        <!-- Contenido de la pestaña de entrada de URL -->
+        <div id="url-tab" class="tab-content">
+            <input type="text" id="newsUrl" placeholder="Enter news article URL here...">
+            <button onclick="classifyNews('url')">Analyze URL</button>
+        </div>
+
+        <!-- Loader para indicar que se está procesando -->
+        <div class="loader" id="loader"></div>
+        <!-- Contenedor para mostrar el resultado -->
+        <div id="result"></div>
+        <!-- Contenedor para mostrar la vista previa del texto extraído -->
+        <div id="text-preview" class="text-preview" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Función para cambiar entre pestañas
+        function switchTab(tabName) {
+            // Ocultar todo el contenido de las pestañas
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove('active');
+            }
+            
+            // Desactivar todas las pestañas
+            const tabs = document.getElementsByClassName('tab');
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            
+            // Activar la pestaña y el contenido seleccionados
+            document.getElementById(tabName + '-tab').classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            
+            // Limpiar el resultado
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            resultDiv.className = '';
+            
+            // Ocultar la vista previa del texto
+            document.getElementById('text-preview').style.display = 'none';
+        }
+
+        // Función para clasificar noticias
+        async function classifyNews(inputType) {
+            const resultDiv = document.getElementById('result');
+            const loader = document.getElementById('loader');
+            const textPreviewDiv = document.getElementById('text-preview');
+            
+            let text, url, endpoint;
+            
+            if (inputType === 'text') {
+                text = document.getElementById('newsText').value;
+                if (!text.trim()) {
+                    resultDiv.innerHTML = 'Please enter some news text.';
+                    resultDiv.className = 'result-error';
+                    return;
+                }
+                endpoint = '/predict';
+            } else {
+                url = document.getElementById('newsUrl').value;
+                if (!url.trim()) {
+                    resultDiv.innerHTML = 'Please enter a URL.';
+                    resultDiv.className = 'result-error';
+                    return;
+                }
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                    document.getElementById('newsUrl').value = url;
+                }
+                endpoint = '/predict_url';
+                text = url;
+            }
+            
+            resultDiv.innerHTML = '';
+            resultDiv.className = '';
+            textPreviewDiv.style.display = 'none';
+            loader.style.display = 'block'; // Mostrar loader
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(inputType === 'text' ? { text: text } : { url: text })
+                });
+
+                loader.style.display = 'none'; // Ocultar loader
+                // Parsear la respuesta JSON
+                const data = await response.json();
+
+                // Verificar si la respuesta fue exitosa
+                if (response.ok) {
+                    // Obtener el texto de la predicción
+                    let predictionText = data.prediction;
+
+                    // Manejar casos donde la predicción podría no ser una cadena simple
+                    if (typeof predictionText !== 'string') {
+                        predictionText = JSON.stringify(predictionText);
+                    }
+
+                    // Mostrar la predicción en el contenedor de resultados
+                    resultDiv.innerHTML = `Prediction: <strong>${predictionText.toUpperCase()}</strong>`;
+                    
+                    // Verificar si la predicción contiene "Real News" o "Fake News"
+                    if (predictionText.toLowerCase().includes('real')) {
+                        // Aplicar estilos para noticias reales
+                        resultDiv.className = 'result-real';
+                    } else if (predictionText.toLowerCase().includes('fake')) {
+                        // Aplicar estilos para noticias falsas
+                        resultDiv.className = 'result-fake';
+                    } else {
+                        // Aplicar estilos para valores de predicción inesperados
+                        resultDiv.className = 'result-error'; // For unexpected prediction values
+                    }
+                    
+                    // Mostrar la vista previa del texto si está disponible (para entrada de URL)
+                    if (data.extracted_text_preview) {
+                        textPreviewDiv.innerHTML = `<strong>Extracted text:</strong><br>${data.extracted_text_preview}`;
+                        textPreviewDiv.style.display = 'block';
+                    }
+                } else {
+                    // Mostrar mensaje de error si la respuesta no fue exitosa
+                    resultDiv.innerHTML = `Error: ${data.error || 'Failed to get prediction.'}`;
+                    resultDiv.className = 'result-error';
+                    
+                    /// Mostrar sugerencia si está disponible
+                    if (data.suggestion) {
+                        resultDiv.innerHTML += `<div class="suggestion">${data.suggestion}</div>`;
+                    }
+                }
+            } catch (error) {
+                // Ocultar el loader en caso de error
+                loader.style.display = 'none';
+
+                // Registrar el error en la consola
+                console.error('Error:', error);
+
+                // Mostrar mensaje de error en el contenedor de resultados
+                resultDiv.innerHTML = 'An error occurred while classifying the news. Please check the console.';
+                resultDiv.className = 'result-error';
+            }
+        }
+    </script>
+</body>
+</html>
