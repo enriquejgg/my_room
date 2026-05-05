@@ -215,7 +215,9 @@ class CVTailorApp(tk.Tk):
 
     # ── State ───────────────────────────────────────────────────────────────
 
-    def set_cv_path(self, path: str): self.cv_path = path
+    def set_cv_path(self, path: str):
+        self.cv_path = path
+        print(f"[app] CV path set: {path}")
     def set_jd_text(self, text: str): self.jd_text = text
     def set_mode(self, mode: ProcessingMode): self.processing_mode = mode
     def set_analysis_result(self, result: AnalysisResult): self.analysis_result = result

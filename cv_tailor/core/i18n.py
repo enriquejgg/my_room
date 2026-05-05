@@ -802,3 +802,115 @@ _AI_LANGUAGE_INSTRUCTIONS = {
 
 def get_ai_language_instruction(locale: str) -> str:
     return _AI_LANGUAGE_INSTRUCTIONS.get(locale, _AI_LANGUAGE_INSTRUCTIONS["en"])
+
+
+# ── Font picker strings ───────────────────────────────────────────────────────
+
+_FONT_PICKER_STRINGS: Dict[str, Dict[str, str]] = {
+    "fontpicker.title": {
+        "en": "Choose Replacement Font",
+        "fr": "Choisir une police de remplacement",
+        "de": "Ersatzschrift wählen",
+        "es": "Elegir fuente de reemplazo",
+        "ja": "代替フォントを選択",
+        "zh": "选择替代字体",
+    },
+    "fontpicker.warn.title": {
+        "en": "Some embedded fonts could not be extracted",
+        "fr": "Certaines polices intégrées n'ont pas pu être extraites",
+        "de": "Einige eingebettete Schriften konnten nicht extrahiert werden",
+        "es": "Algunas fuentes incrustadas no pudieron extraerse",
+        "ja": "一部の埋め込みフォントを抽出できませんでした",
+        "zh": "部分嵌入字体无法提取",
+    },
+    "fontpicker.warn.body": {
+        "en": "The following fonts from your original CV could not be reused: {fonts}. Please choose a replacement font for the edited sections.",
+        "fr": "Les polices suivantes de votre CV original n'ont pas pu être réutilisées : {fonts}. Veuillez choisir une police de remplacement pour les sections modifiées.",
+        "de": "Die folgenden Schriften aus Ihrem Original-Lebenslauf konnten nicht wiederverwendet werden: {fonts}. Bitte wählen Sie eine Ersatzschrift für die bearbeiteten Abschnitte.",
+        "es": "Las siguientes fuentes de tu CV original no pudieron reutilizarse: {fonts}. Por favor elige una fuente de reemplazo para las secciones editadas.",
+        "ja": "元のCVから以下のフォントを再利用できませんでした：{fonts}。編集したセクションに使用する代替フォントを選択してください。",
+        "zh": "以下原始简历中的字体无法重用：{fonts}。请为编辑的部分选择替代字体。",
+    },
+    "fontpicker.warn.ok_fonts": {
+        "en": "Successfully extracted: {fonts}",
+        "fr": "Extraites avec succès : {fonts}",
+        "de": "Erfolgreich extrahiert: {fonts}",
+        "es": "Extraídas con éxito: {fonts}",
+        "ja": "正常に抽出されました：{fonts}",
+        "zh": "成功提取：{fonts}",
+    },
+    "fontpicker.search_label": {
+        "en": "Search:",
+        "fr": "Rechercher :",
+        "de": "Suchen:",
+        "es": "Buscar:",
+        "ja": "検索：",
+        "zh": "搜索：",
+    },
+    "fontpicker.preview_label": {
+        "en": "Selected font:",
+        "fr": "Police sélectionnée :",
+        "de": "Ausgewählte Schrift:",
+        "es": "Fuente seleccionada:",
+        "ja": "選択中のフォント：",
+        "zh": "已选字体：",
+    },
+    "fontpicker.preview_placeholder": {
+        "en": "Select a font from the list above",
+        "fr": "Sélectionnez une police dans la liste ci-dessus",
+        "de": "Wählen Sie eine Schrift aus der obigen Liste",
+        "es": "Selecciona una fuente de la lista de arriba",
+        "ja": "上のリストからフォントを選択してください",
+        "zh": "从上方列表中选择一种字体",
+    },
+    "fontpicker.preview_text": {
+        "en": "The quick brown fox jumps over the lazy dog. 0123456789",
+        "fr": "Portez ce vieux whisky au juge blond qui fume. 0123456789",
+        "de": "Victor jagt zwolf Boxkampfer quer uber den großen Sylter Deich. 0123456789",
+        "es": "El veloz murciélago hindu comía feliz cardillo y kiwi. 0123456789",
+        "ja": "いろはにほへとちりぬるを　わかよたれそつねならむ　0123456789",
+        "zh": "山川相缪郁乎苍苍此非曹孟德之诗乎 0123456789",
+    },
+    "fontpicker.source_system": {
+        "en": "System font",
+        "fr": "Police système",
+        "de": "Systemschrift",
+        "es": "Fuente del sistema",
+        "ja": "システムフォント",
+        "zh": "系统字体",
+    },
+    "fontpicker.source_builtin": {
+        "en": "Built-in (always available)",
+        "fr": "Intégrée (toujours disponible)",
+        "de": "Integriert (immer verfügbar)",
+        "es": "Integrada (siempre disponible)",
+        "ja": "組み込み（常に利用可能）",
+        "zh": "内置（始终可用）",
+    },
+    "fontpicker.fonts_found": {
+        "en": "fonts found",
+        "fr": "polices trouvées",
+        "de": "Schriften gefunden",
+        "es": "fuentes encontradas",
+        "ja": "フォントが見つかりました",
+        "zh": "个字体",
+    },
+    "fontpicker.btn.confirm": {
+        "en": "Use This Font →",
+        "fr": "Utiliser cette police →",
+        "de": "Diese Schrift verwenden →",
+        "es": "Usar esta fuente →",
+        "ja": "このフォントを使用 →",
+        "zh": "使用此字体 →",
+    },
+    "fontpicker.btn.cancel": {
+        "en": "Cancel",
+        "fr": "Annuler",
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "ja": "キャンセル",
+        "zh": "取消",
+    },
+}
+
+# Merge font picker strings into main _STRINGS dict_STRINGS.update(_FONT_PICKER_STRINGS)

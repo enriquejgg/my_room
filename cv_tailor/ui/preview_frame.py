@@ -223,6 +223,7 @@ class PreviewFrame(tk.Frame):
             messagebox.showerror(self._t("preview.err.title"),
                                  self._t("preview.err.no_result"), parent=self)
             return
+
         output_path = filedialog.asksaveasfilename(
             title=self._t("preview.dl.save_title"),
             defaultextension=".pdf",
@@ -231,15 +232,70 @@ class PreviewFrame(tk.Frame):
         )
         if not output_path:
             return
-        self.download_btn.configure(state="disabled")
-        self.status_label.configure(text=self._t("preview.status.gen"), fg=COLORS["info"])
-        threading.Thread(target=self._generate_pdf_thread,
-                         args=(result, output_path), daemon=True).start()
 
-    def _generate_pdf_thread(self, result, output_path):
+        source_pdf = getattr(self.app, "cv_path", None)
+
+        # ── Font availability check ───────────────────────────────────────
+        fallback_font = None
+        if source_pdf:
+            from core.pdf_generator import check_font_availability, discover_system_fonts
+            font_check = check_font_availability(source_pdf)
+
+            if not font_check["fonts_ok"]:
+                # Discover available fonts on this machine
+                available = discover_system_fonts()
+
+                # Always include base-14 fonts at the top
+                from core.pdf_generator import BASE14_FONTS
+                all_fonts = BASE14_FONTS + [
+                    f for f in available
+                    if f["name"] not in {b["name"] for b in BASE14_FONTS}
+                ]
+
+                # Show picker dialog
+                from ui.font_picker import ask_font
+                chosen = ask_font(
+                    parent=self,
+                    app=self.app,
+                    failed_fonts=font_check["failed_names"],
+                    embedded_fonts=font_check["embedded_names"],
+                    available_fonts=all_fonts,
+                )
+                if chosen is None:
+                    # User cancelled — abort download
+                    return
+                fallback_font = chosen
+
+        # ── Generate PDF ──────────────────────────────────────────────────
+        self.download_btn.configure(state="disabled")
+        self.status_label.configure(
+            text=self._t("preview.status.gen"), fg=COLORS["info"]
+        )
+        threading.Thread(
+            target=self._generate_pdf_thread,
+            args=(result, output_path, source_pdf, fallback_font),
+            daemon=True,
+        ).start()
+
+    def _generate_pdf_thread(self, result, output_path, source_pdf, fallback_font):
         try:
-            from core.pdf_generator import generate_final_pdf
-            path = generate_final_pdf(result.cv_sections, result.suggestions, output_path)
+            if fallback_font:
+                from core.pdf_generator import generate_final_pdf_with_fallback_font
+                path = generate_final_pdf_with_fallback_font(
+                    result.cv_sections,
+                    result.suggestions,
+                    output_path,
+                    source_pdf_path=source_pdf,
+                    fallback_font=fallback_font,
+                )
+            else:
+                from core.pdf_generator import generate_final_pdf
+                path = generate_final_pdf(
+                    result.cv_sections,
+                    result.suggestions,
+                    output_path,
+                    source_pdf_path=source_pdf,
+                )
             self.after(0, lambda: self._on_pdf_done(path))
         except Exception as exc:
             error_msg = str(exc)
