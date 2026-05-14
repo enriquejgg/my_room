@@ -204,6 +204,9 @@ class ModeFrame(tk.Frame):
                 client = AIClient(api_key=self._resolved_api_key)
                 result = client.analyse(masked_cv, jd_text, masker, cv_sections,
                                         locale=self.app.locale)
+                # Sort AI suggestions into CV order
+                from core.suggestion_engine import sort_suggestions_by_cv_position
+                sort_suggestions_by_cv_position(result)
             else:
                 self.after(0, lambda: self._set_status(self._t("mode.status.analysing"), COLORS["info"]))
                 result = analyse_cv_vs_jd(cv_sections, jd_text)
@@ -222,6 +225,40 @@ class ModeFrame(tk.Frame):
         s = "s" if n != 1 else ""
         self._set_status(self._t("mode.status.done", n=n, s=s), COLORS["success"])
         self.app.set_analysis_result(result)
+
+        # ── Tune-down check ───────────────────────────────────────────────
+        # Detect overqualification signals and ask the user if they want
+        # to generate tune-down suggestions before proceeding to review.
+        try:
+            from core.tune_down_engine import detect_overqualification
+            findings = detect_overqualification(
+                result, self.app.jd_text, self.app.locale
+            )
+            if findings:
+                self.after(50, lambda: self._ask_tune_down(result, findings))
+                return
+        except Exception:
+            pass   # tune-down is optional — never block normal flow
+
+        self.app.next_step()
+
+    def _ask_tune_down(self, result, findings):
+        """Show the tune-down dialog; generate suggestions if user agrees."""
+        from ui.tune_down_dialog import ask_tune_down
+        agreed = ask_tune_down(parent=self, app=self.app, findings=findings)
+        if agreed:
+            try:
+                from core.tune_down_engine import generate_tune_down_suggestions
+                new_suggestions = generate_tune_down_suggestions(
+                    result, self.app.jd_text, self.app.locale
+                )
+                n_new = len(new_suggestions)
+                self._set_status(
+                    self._t("mode.status.tune_down_added", n=n_new),
+                    COLORS["info"],
+                )
+            except Exception:
+                pass
         self.app.next_step()
 
     def _on_analysis_error(self, error_msg):

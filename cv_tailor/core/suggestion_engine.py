@@ -234,7 +234,69 @@ def generate_suggestions(analysis: AnalysisResult,
                           locale: str = "en") -> List[Suggestion]:
     """
     Generate improvement suggestions using local heuristic engine.
-    Populates analysis.suggestions and returns the list.
+    Populates analysis.suggestions and returns the list, sorted in CV order.
     """
     engine = SuggestionEngine(analysis, jd_text, locale=locale)
-    return engine.generate()
+    suggestions = engine.generate()
+    sort_suggestions_by_cv_position(analysis)
+    return analysis.suggestions
+
+
+def sort_suggestions_by_cv_position(analysis: AnalysisResult) -> None:
+    """
+    Re-order analysis.suggestions so they appear in the same sequence as
+    their corresponding text does in the CV (top-to-bottom, section-by-section).
+
+    Works for both standard and AI-assisted modes.
+
+    Algorithm:
+      1. Build a full-CV string by concatenating all section texts in order,
+         recording each section's start offset.
+      2. For each suggestion, find its original_text in the full-CV string
+         using exact match first, then whitespace-normalised fallback.
+      3. Sort by found offset; suggestions with no match go to the end
+         (preserving their relative order).
+    """
+    if not analysis.suggestions:
+        return
+
+    # ── Build full-CV text with section offsets ────────────────────────────
+    full_text = ""
+    section_offsets: List[tuple] = []   # (section_name, char_start)
+
+    for section in analysis.cv_sections:
+        section_offsets.append((section.name, len(full_text)))
+        full_text += section.raw_text + "\n\n"
+
+    # Normalised version for fuzzy fallback
+    import re as _re
+    norm_full = _re.sub(r'\s+', ' ', full_text)
+
+    def _position(suggestion: Suggestion) -> int:
+        """Return the character offset of the suggestion's original_text."""
+        orig = suggestion.original_text
+        if not orig:
+            return len(full_text)
+
+        # 1. Exact match
+        idx = full_text.find(orig)
+        if idx != -1:
+            return idx
+
+        # 2. Whitespace-normalised match
+        norm_orig = _re.sub(r'\s+', ' ', orig).strip()
+        nidx = norm_full.find(norm_orig)
+        if nidx != -1:
+            # Map normalised offset back to approximate original offset
+            # (close enough for ordering purposes)
+            return nidx
+
+        # 3. Section-name fallback — place after all text in that section
+        for name, start in reversed(section_offsets):
+            if name == suggestion.section_name:
+                return start + len(full_text)  # after section, before end
+
+        return len(full_text) * 2  # completely unmatched → very end
+
+    # ── Stable sort by position ────────────────────────────────────────────
+    analysis.suggestions.sort(key=_position)

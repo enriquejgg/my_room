@@ -36,12 +36,9 @@ class CVTailorApp(tk.Tk):
                                padx=PAD["lg"], pady=(0, PAD["md"]))
 
         self._init_frames()
-        self._show_step(1)
+        self._show_step(0)          # Start on the welcome screen
 
-        # Force geometry calculation and first render before mainloop
         self.update_idletasks()
-
-        # Ensure clean shutdown on window close
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _on_close(self):
@@ -59,12 +56,14 @@ class CVTailorApp(tk.Tk):
     # ── Frames ──────────────────────────────────────────────────────────────
 
     def _init_frames(self):
+        from ui.welcome_frame import WelcomeFrame
         from ui.upload_frame import UploadFrame
         from ui.mode_frame import ModeFrame
         from ui.review_frame import ReviewFrame
         from ui.preview_frame import PreviewFrame
 
         self.frames = {
+            0: WelcomeFrame(self.content_area, app=self),
             1: UploadFrame(self.content_area, app=self),
             2: ModeFrame(self.content_area, app=self),
             3: ReviewFrame(self.content_area, app=self),
@@ -86,6 +85,22 @@ class CVTailorApp(tk.Tk):
         self.header.pack_propagate(False)
 
         tk.Frame(self.header, bg=COLORS["accent"], width=8).pack(side="left", fill="y")
+
+        # ── Home button ────────────────────────────────────────────────────
+        self._home_btn = tk.Button(
+            self.header,
+            text=self.t("home.btn"),
+            font=FONTS["small_bold"],
+            bg=COLORS["bg_surface"],
+            fg=COLORS["text_secondary"],
+            activebackground=COLORS["bg_hover"],
+            activeforeground=COLORS["text_primary"],
+            relief="flat",
+            padx=10, pady=6,
+            cursor="hand2",
+            command=self.go_home,
+        )
+        self._home_btn.pack(side="left", padx=(PAD["sm"], 0))
 
         self.header_title = tk.Label(
             self.header, text=self.t("app.title"),
@@ -140,6 +155,7 @@ class CVTailorApp(tk.Tk):
         self.header_title.configure(text=self.t("app.title"))
         self.header_subtitle.configure(text=self.t("app.subtitle"))
         self.privacy_label.configure(text=self.t("app.privacy_badge"))
+        self._home_btn.configure(text=self.t("home.btn"))
         self._rebuild_frames()
 
     # ── Stepper ─────────────────────────────────────────────────────────────
@@ -194,13 +210,45 @@ class CVTailorApp(tk.Tk):
 
     def _show_step(self, step: int):
         self.current_step = step
-        self._update_stepper(step)
+        # Hide the progress stepper on the welcome screen
+        if step == 0:
+            self.stepper_outer.pack_forget()
+        else:
+            self.stepper_outer.pack(fill="x", after=self.header)
+            self._update_stepper(step)
         for s, frame in self.frames.items():
             if s == step:
                 frame.pack(fill="both", expand=True)
             else:
                 frame.pack_forget()
         self.frames[step].on_enter()
+
+    def go_home(self):
+        """Return to the welcome screen, prompting if a session is active."""
+        if self.current_step == 0:
+            return
+        if self.analysis_result is not None or self.cv_path:
+            from tkinter import messagebox
+            confirmed = messagebox.askyesno(
+                self.t("home.confirm.title"),
+                self.t("home.confirm.msg"),
+                parent=self,
+            )
+            if not confirmed:
+                return
+        self._reset_session()
+        self._show_step(0)
+
+    def _reset_session(self):
+        """Clear all session state so a fresh analysis can begin."""
+        self.cv_path = None
+        self.jd_text = ""
+        self.processing_mode = ProcessingMode.STANDARD
+        self.analysis_result = None
+        # Re-initialise frames so upload/mode/review start clean
+        for frame in self.frames.values():
+            frame.destroy()
+        self._init_frames()
 
     def go_to_step(self, step: int):
         self._show_step(step)
