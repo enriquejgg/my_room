@@ -6,12 +6,12 @@ CRITICAL BUSINESS RULE:
     No new skills, experiences, or qualifications may be invented.
 """
 import re
-from typing import List, Optional
+from typing import List
 
 from core.models import (
     CVSection, AnalysisResult, Suggestion, SuggestionType
 )
-from core.analyzer import WEAK_VERBS, VERB_UPGRADES
+from core.analyzer import VERB_UPGRADES
 
 
 _HAS_METRIC_RE = re.compile(
@@ -237,7 +237,7 @@ def generate_suggestions(analysis: AnalysisResult,
     Populates analysis.suggestions and returns the list, sorted in CV order.
     """
     engine = SuggestionEngine(analysis, jd_text, locale=locale)
-    suggestions = engine.generate()
+    engine.generate()
     sort_suggestions_by_cv_position(analysis)
     return analysis.suggestions
 

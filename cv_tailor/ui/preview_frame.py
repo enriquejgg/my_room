@@ -475,7 +475,6 @@ class PreviewFrame(tk.Frame):
 
         accepted = sum(1 for s in result.suggestions
                        if s.status.value == "accepted")
-        total = len(result.suggestions)
         self.score_badge.configure(text=f"{result.match_score}%")
         self.stats_lbl.configure(
             text=self._t("preview.stats",

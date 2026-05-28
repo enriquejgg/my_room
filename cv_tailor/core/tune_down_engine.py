@@ -10,7 +10,7 @@ BUSINESS RULE:
     No content is altered without user approval of each individual suggestion.
 """
 import re
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional
 from core.models import (
     Suggestion, SuggestionType, CVSection, AnalysisResult
 )

@@ -10,7 +10,7 @@ The user can:
 """
 import tkinter as tk
 from tkinter import ttk
-from typing import TYPE_CHECKING, List, Dict, Optional
+from typing import TYPE_CHECKING, List, Dict
 
 from ui.styles import COLORS, FONTS, PAD
 

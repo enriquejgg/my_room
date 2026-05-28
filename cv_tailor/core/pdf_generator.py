@@ -17,7 +17,6 @@ Requires: pymupdf >= 1.24  (pip install pymupdf)
 Fallback:  reportlab plain rebuild when pymupdf is unavailable.
 """
 import os
-import re
 import tempfile
 from typing import List, Dict, Tuple, Optional
 
